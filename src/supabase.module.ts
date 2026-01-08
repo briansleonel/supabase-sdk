@@ -19,7 +19,7 @@ export class SupabaseModule {
           },
         },
         {
-          provide: 'SUPABASE_OPTIONS',
+          provide: SUPABASE_OPTIONS,
           useValue: options,
         },
         SupabaseBaseClient,
@@ -46,7 +46,7 @@ export class SupabaseModule {
               supabaseOptions.databaseKey,
             );
           },
-          inject: ['SUPABASE_OPTIONS'],
+          inject: [SUPABASE_OPTIONS],
         },
         SupabaseBaseClient,
       ],
