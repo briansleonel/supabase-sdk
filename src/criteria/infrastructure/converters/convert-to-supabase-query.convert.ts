@@ -1,10 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Injectable, Inject } from '@nestjs/common';
 import { isEqual } from 'lodash';
-import { SUPABASE_CLIENT } from 'src/clients/symbols';
-import { CriteriaDto } from 'src/criteria/domain/dto/criteria.dto';
-import { OperatorEnum } from 'src/criteria/domain/enums/operator.enum';
-import { OrderDirectionEnum } from 'src/criteria/domain/enums/order-direction.enum';
+import { CriteriaDto } from '../../../criteria/domain/dto/criteria.dto';
+import { OperatorEnum } from '../../../criteria/domain/enums/operator.enum';
+import { OrderDirectionEnum } from '../../../criteria/domain/enums/order-direction.enum';
+import { SUPABASE_CLIENT } from '../../../clients/symbols';
 
 @Injectable()
 export class ConvertToSupabaseQuery {

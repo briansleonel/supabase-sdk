@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IFilters } from 'src/criteria/domain/interfaces/filters.interface';
+import { IFilters } from '../../../criteria/domain/interfaces/filters.interface';
 
 @Injectable()
 export class AddNewFilterAction {

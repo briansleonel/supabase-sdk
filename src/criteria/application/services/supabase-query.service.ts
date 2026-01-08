@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PostgrestSingleResponse } from '@supabase/supabase-js';
-import { SupabaseBaseClient } from 'src/clients/supabase-base-client';
-import { IFilterByPagination } from 'src/common/interfaces/filter-by-pagination';
-import { CriteriaDto } from 'src/criteria/domain/dto/criteria.dto';
-import { ConvertToSupabaseQuery } from 'src/criteria/infrastructure/converters/convert-to-supabase-query.convert';
+import { SupabaseBaseClient } from '../../../clients/supabase-base-client';
+import { IFilterByPagination } from '../../../common/interfaces/filter-by-pagination';
+import { CriteriaDto } from '../../../criteria/domain/dto/criteria.dto';
+import { ConvertToSupabaseQuery } from '../../../criteria/infrastructure/converters/convert-to-supabase-query.convert';
 
 @Injectable()
 export class SupabaseQueryService {

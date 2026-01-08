@@ -5,7 +5,7 @@ import {
 } from '@supabase/supabase-js';
 import { get, isEmpty } from 'lodash';
 import { SUPABASE_CLIENT, SUPABASE_OPTIONS } from './symbols';
-import { SupabaseModuleOptions } from 'src/common/interfaces/db-module-options.interface';
+import { SupabaseModuleOptions } from '../../src/common/interfaces/db-module-options.interface';
 
 @Injectable()
 export class SupabaseBaseClient {

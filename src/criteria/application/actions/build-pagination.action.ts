@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { isNull } from 'lodash';
-import { IFilterByPagination } from 'src/common/interfaces/filter-by-pagination';
-import { IRpcResponse } from 'src/criteria/domain/interfaces/rpc-response.interface';
+import { IFilterByPagination } from '../../../common/interfaces/filter-by-pagination';
+import { IRpcResponse } from '../../../criteria/domain/interfaces/rpc-response.interface';
 
 @Injectable()
 export class BuildPaginationAction {
