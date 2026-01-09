@@ -1,6 +1,6 @@
 {
   "name": "@briansleonel/supabase-sdk",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "NestJS module for Supabase with advanced querying and pagination",
   "author": "Brian Leonel <gonzalezbrianleonel76@gmail.com>",
   "private": false,
