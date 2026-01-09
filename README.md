@@ -5,7 +5,7 @@ Un módulo completo de NestJS para trabajar con Supabase, que incluye cliente ba
 ## 📦 Instalación
 
 ```bash
-npm install @tu-usuario/nestjs-supabase-module
+npm install @contactship/supabase-sdk
 ```
 
 ### Dependencias requeridas
@@ -39,7 +39,7 @@ SUPABASE_KEY=tu-anon-key
 ```typescript
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { SupabaseModule, SupabaseCriteriaModule } from '@tu-usuario/nestjs-supabase-module';
+import { SupabaseModule, SupabaseCriteriaModule } from '@contactship/supabase-sdk';
 
 @Module({
   imports: [
@@ -62,7 +62,7 @@ export class AppModule {}
 ```typescript
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SupabaseModule, SupabaseCriteriaModule } from '@tu-usuario/nestjs-supabase-module';
+import { SupabaseModule, SupabaseCriteriaModule } from '@contactship/supabase-sdk';
 
 @Module({
   imports: [
@@ -92,7 +92,7 @@ El `SupabaseBaseClient` proporciona métodos CRUD básicos.
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { SupabaseBaseClient } from '@tu-usuario/nestjs-supabase-module';
+import { SupabaseBaseClient } from '@contactship/supabase-sdk';
 
 interface User {
   id: string;
@@ -207,7 +207,7 @@ El `SupabaseQueryService` permite realizar consultas complejas con filtros, orde
 ```typescript
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { QueryDto, IFilterByPagination } from '@tu-usuario/nestjs-supabase-module';
+import { QueryDto, IFilterByPagination } from '@contactship/supabase-sdk';
 import { CallTagService } from './call-tag.service';
 
 @ApiTags('Call Tags')
@@ -236,7 +236,7 @@ import {
   IFilterByPagination,
   IFilterById,
   QueryDto,
-} from '@tu-usuario/nestjs-supabase-module';
+} from '@contactship/supabase-sdk';
 
 interface CallTag {
   id: string;
@@ -399,7 +399,7 @@ Las consultas con `SupabaseQueryService` devuelven un objeto `IFilterByPaginatio
 Para recibir parámetros de consulta en tus endpoints.
 
 ```typescript
-import { QueryDto } from '@tu-usuario/nestjs-supabase-module';
+import { QueryDto } from '@contactship/supabase-sdk';
 
 @Get()
 async findAll(@Query() query: QueryDto) {
@@ -415,7 +415,7 @@ async findAll(@Query() query: QueryDto) {
 Para construir consultas programáticamente.
 
 ```typescript
-import { CriteriaDto, IFilterById } from '@tu-usuario/nestjs-supabase-module';
+import { CriteriaDto, IFilterById } from '@contactship/supabase-sdk';
 
 const filterById: IFilterById = {
   field: 'organization_id',
@@ -438,7 +438,7 @@ const criteria = new CriteriaDto(
 Para crear filtros manualmente.
 
 ```typescript
-import { FiltersDto, OperatorEnum } from '@tu-usuario/nestjs-supabase-module';
+import { FiltersDto, OperatorEnum } from '@contactship/supabase-sdk';
 
 const filter = new FiltersDto('status', 'EQUAL', 'active');
 // O con el enum
@@ -474,7 +474,7 @@ const users = await this.supabaseClient.getByQuery<User[]>('users', {
 ## 🔐 Autenticación
 
 ```typescript
-import { SupabaseBaseClient } from '@tu-usuario/nestjs-supabase-module';
+import { SupabaseBaseClient } from '@contactship/supabase-sdk';
 
 @Injectable()
 export class AuthService {
@@ -503,7 +503,7 @@ Si tienes `@nestjs/swagger` instalado, los DTOs incluyen decoradores automática
 ```typescript
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
-import { QueryDto } from '@tu-usuario/nestjs-supabase-module';
+import { QueryDto } from '@contactship/supabase-sdk';
 
 @ApiTags('Users')
 @Controller('users')
@@ -576,7 +576,7 @@ import {
   IFilterByPagination,
   IFilterById,
   SupabaseModuleOptions,
-} from '@tu-usuario/nestjs-supabase-module';
+} from '@contactship/supabase-sdk';
 ```
 
 ### IFilterByPagination
@@ -606,7 +606,7 @@ interface IFilters {
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { SupabaseBaseClient } from '@tu-usuario/nestjs-supabase-module';
+import { SupabaseBaseClient } from '@contactship/supabase-sdk';
 
 @Injectable()
 export class UserRepository {
@@ -646,7 +646,7 @@ import {
   CriteriaDto,
   QueryDto,
   IFilterByPagination,
-} from '@tu-usuario/nestjs-supabase-module';
+} from '@contactship/supabase-sdk';
 
 @Injectable()
 export class ProductService {
@@ -714,6 +714,6 @@ export class ProductService {
 // ✅ Correcto
 { "operator": "EQUAL" }
 // O usa el enum
-import { OperatorEnum } from '@tu-usuario/nestjs-supabase-module';
+import { OperatorEnum } from '@contactship/supabase-sdk';
 { "operator": OperatorEnum.EQUAL }
 ```
