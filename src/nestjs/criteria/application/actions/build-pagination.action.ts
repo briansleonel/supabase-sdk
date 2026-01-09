@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BuildPaginationActionCore } from 'src/core';
+import { BuildPaginationActionCore } from '../../../../core';
 
 @Injectable()
 export class BuildPaginationAction extends BuildPaginationActionCore {

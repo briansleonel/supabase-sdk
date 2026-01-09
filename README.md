@@ -1,41 +1,47 @@
-# NestJS Supabase Module
+# NestJS Supabase SDK
 
-Un módulo completo de NestJS para trabajar con Supabase, que incluye cliente base, sistema de consultas avanzado con filtros, paginación y soporte para soft deletes.
+Un SDK completo para trabajar con Supabase que funciona tanto en **NestJS** como en proyectos **standalone** (Express, TypeScript/JavaScript vanilla). Incluye cliente base, sistema de consultas avanzado con filtros, paginación y soporte para soft deletes.
 
 ## 📦 Instalación
-
 ```bash
 npm install @contactship/supabase-sdk
 ```
 
 ### Dependencias requeridas
-
 ```bash
-npm install @supabase/supabase-js class-validator class-transformer lodash
+npm install @supabase/supabase-js lodash
 ```
 
-### Dependencias opcionales
-
+### Dependencias opcionales (solo para NestJS)
 ```bash
+# Para proyectos NestJS
+npm install @nestjs/common @nestjs/core reflect-metadata rxjs
+
 # Para documentación con Swagger (opcional)
-npm install @nestjs/swagger
+npm install @nestjs/swagger class-validator class-transformer
 ```
 
-## 🚀 Configuración rápida
+## 🎯 Compatibilidad
+
+Este SDK funciona en:
+- ✅ **NestJS** - Con decoradores e inyección de dependencias
+- ✅ **Express** - Con factory functions
+- ✅ **TypeScript/JavaScript vanilla** - Sin frameworks
+- ✅ **Node.js** - Cualquier entorno Node
+
+## 🚀 Uso en NestJS
 
 ### 1. Variables de entorno
 
 Crea un archivo `.env`:
-
 ```env
 SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_KEY=tu-anon-key
 ```
 
-### 2. Configurar el módulo en tu App
+### 2. Configurar el módulo
 
 #### Opción A: Configuración síncrona
-
 ```typescript
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -58,7 +64,6 @@ export class AppModule {}
 ```
 
 #### Opción B: Configuración asíncrona (Recomendada)
-
 ```typescript
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -74,7 +79,7 @@ import { SupabaseModule, SupabaseCriteriaModule } from '@contactship/supabase-sd
       useFactory: (configService: ConfigService) => ({
         databaseUrl: configService.get<string>('SUPABASE_URL'),
         databaseKey: configService.get<string>('SUPABASE_KEY'),
-        tables: ['agents', 'campaigns', 'contacts'],  // Tablas con soft delete
+        tables: ['agents', 'campaigns', 'contacts'], // Tablas con soft delete
       }),
       inject: [ConfigService],
     }),
@@ -84,15 +89,10 @@ import { SupabaseModule, SupabaseCriteriaModule } from '@contactship/supabase-sd
 export class AppModule {}
 ```
 
-## 📚 Uso básico
-
-### Cliente Base de Supabase
-
-El `SupabaseBaseClient` proporciona métodos CRUD básicos.
-
+### 3. Usar en servicios
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { SupabaseBaseClient } from '@contactship/supabase-sdk';
+import { SupabaseBaseClient, SupabaseQueryService } from '@contactship/supabase-sdk';
 
 interface User {
   id: string;
@@ -103,211 +103,390 @@ interface User {
 
 @Injectable()
 export class UserService {
-  constructor(private readonly supabaseClient: SupabaseBaseClient) {}
+  constructor(
+    private readonly supabaseClient: SupabaseBaseClient,
+    private readonly queryService: SupabaseQueryService,
+  ) {}
 
-  // Crear un registro
+  // CRUD básico
   async createUser(userData: Partial<User>): Promise<User> {
     return await this.supabaseClient.create<User>('users', userData);
   }
 
-  // Obtener por ID
   async getUserById(id: string): Promise<User> {
     return await this.supabaseClient.getById<User>('users', id);
   }
 
-  // Actualizar
   async updateUser(id: string, data: Partial<User>): Promise<User> {
     return await this.supabaseClient.update<User>('users', id, data);
   }
 
-  // Buscar por query
-  async getUserByEmail(email: string): Promise<User> {
-    return await this.supabaseClient.getOneByQuery<User>(
+  // Consultas avanzadas con paginación
+  async searchUsers(query: QueryDto) {
+    const criteria = new CriteriaDto(
       'users',
-      { email },
+      '*',
+      query.filters,
+      query.orderBy,
+      query.orderDirection,
+      query.limit?.toString(),
+      query.offset?.toString(),
     );
-  }
 
-  // Obtener múltiples registros
-  async getUsersByRole(role: string): Promise<User[]> {
-    return await this.supabaseClient.getByQuery<User[]>(
-      'users',
-      { role },
-    );
-  }
-
-  // Autenticación
-  async login(email: string, password: string) {
-    return await this.supabaseClient.login(email, password);
-  }
-
-  // Llamar a una función RPC
-  async getCustomData(params: any) {
-    return await this.supabaseClient.rpc('my_custom_function', params);
+    return await this.queryService.matching<User>(criteria);
   }
 }
 ```
 
-### Métodos del SupabaseBaseClient
+## 🔧 Uso Standalone (Express, TypeScript vanilla)
 
-#### `create<T>(table, data, schema?, columns?)`
-Crea un nuevo registro en la tabla especificada.
-
-```typescript
-const user = await this.supabaseClient.create<User>(
-  'users',
-  { name: 'John', email: 'john@example.com' }
-);
+### 1. Instalación y setup
+```bash
+npm install @contactship/supabase-sdk @supabase/supabase-js lodash
 ```
 
-#### `update<T>(table, id, data, relation?, columns?)`
+### 2. Crear instancia del SDK
+```typescript
+import { createSupabaseSDK } from '@contactship/supabase-sdk/standalone';
+
+// Crear instancia del SDK
+const supabase = createSupabaseSDK({
+  databaseUrl: process.env.SUPABASE_URL!,
+  databaseKey: process.env.SUPABASE_KEY!,
+  tables: ['users', 'posts', 'comments'], // Tablas con soft delete
+});
+
+// El SDK expone:
+// - supabase.baseClient: Cliente base para CRUD
+// - supabase.queryService: Servicio de consultas avanzadas
+// - supabase.converter: Conversor de queries
+// - supabase.actions: Acciones auxiliares (filtros, paginación)
+```
+
+### 3. Ejemplo con Express
+```typescript
+import express from 'express';
+import { createSupabaseSDK } from '@contactship/supabase-sdk/standalone';
+import type { 
+  CriteriaDto, 
+  IFilterByPagination 
+} from '@contactship/supabase-sdk/core';
+
+const app = express();
+app.use(express.json());
+
+// Inicializar SDK
+const supabase = createSupabaseSDK({
+  databaseUrl: process.env.SUPABASE_URL!,
+  databaseKey: process.env.SUPABASE_KEY!,
+  tables: ['users'],
+});
+
+// CRUD básico
+app.post('/users', async (req, res) => {
+  try {
+    const user = await supabase.baseClient.create('users', req.body);
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/users/:id', async (req, res) => {
+  try {
+    const user = await supabase.baseClient.getById('users', req.params.id);
+    res.json(user);
+  } catch (error) {
+    res.status(404).json({ error: 'User not found' });
+  }
+});
+
+app.put('/users/:id', async (req, res) => {
+  try {
+    const user = await supabase.baseClient.update(
+      'users',
+      req.params.id,
+      req.body
+    );
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Consultas con filtros y paginación
+app.get('/users', async (req, res) => {
+  try {
+    const { limit = 20, offset = 0, filters, orderBy, orderDirection } = req.query;
+
+    // Importar CriteriaDto desde core
+    const { CriteriaDto } = await import('@contactship/supabase-sdk/core');
+    
+    const criteria = new CriteriaDto(
+      'users',
+      '*',
+      filters ? JSON.parse(filters as string) : undefined,
+      orderBy as string,
+      orderDirection as any,
+      limit.toString(),
+      offset.toString(),
+    );
+
+    const result = await supabase.queryService.matching(criteria);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Búsqueda avanzada
+app.get('/users/search', async (req, res) => {
+  try {
+    const users = await supabase.baseClient.getByQuery('users', {
+      role: 'admin',
+      active: true,
+    });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server running on port 3000');
+});
+```
+
+### 4. Ejemplo con TypeScript puro
+```typescript
+import { createSupabaseSDK } from '@contactship/supabase-sdk/standalone';
+import { CriteriaDto, FiltersDto, OperatorEnum } from '@contactship/supabase-sdk/core';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  age: number;
+}
+
+// Inicializar
+const supabase = createSupabaseSDK({
+  databaseUrl: process.env.SUPABASE_URL!,
+  databaseKey: process.env.SUPABASE_KEY!,
+});
+
+// Crear usuario
+async function createUser(userData: Partial<User>): Promise<User> {
+  return await supabase.baseClient.create<User>('users', userData);
+}
+
+// Buscar usuarios mayores de 18
+async function getAdultUsers() {
+  const filters = [
+    new FiltersDto('age', OperatorEnum.GREATER_THAN, 18),
+    new FiltersDto('status', OperatorEnum.EQUAL, 'active'),
+  ];
+
+  const criteria = new CriteriaDto(
+    'users',
+    'id,name,email,age',
+    JSON.stringify(filters),
+    'created_at',
+    'DESCENDENT',
+    '50',
+    '0',
+  );
+
+  return await supabase.queryService.matching<User>(criteria);
+}
+
+// Usar las actions auxiliares
+async function buildPaginatedResponse(data: any, limit: number, offset: number) {
+  return supabase.actions.buildPagination.execute(
+    { data, total_rows: 100 },
+    limit,
+    offset,
+  );
+}
+
+// Ejecutar
+(async () => {
+  const newUser = await createUser({
+    name: 'John Doe',
+    email: 'john@example.com',
+    age: 25,
+  });
+  console.log('Usuario creado:', newUser);
+
+  const adults = await getAdultUsers();
+  console.log('Usuarios adultos:', adults);
+})();
+```
+
+## 📚 Métodos del Cliente Base
+
+### `create<T>(table, data, schema?, columns?)`
+Crea un nuevo registro.
+```typescript
+// NestJS
+const user = await this.supabaseClient.create<User>('users', { name: 'John' });
+
+// Standalone
+const user = await supabase.baseClient.create<User>('users', { name: 'John' });
+```
+
+### `update<T>(table, id, data, relation?, columns?)`
 Actualiza un registro existente.
-
 ```typescript
-const user = await this.supabaseClient.update<User>(
-  'users',
-  'user-id-123',
-  { name: 'Jane' }
-);
+// NestJS
+const user = await this.supabaseClient.update<User>('users', 'id-123', { name: 'Jane' });
+
+// Standalone
+const user = await supabase.baseClient.update<User>('users', 'id-123', { name: 'Jane' });
 ```
 
-#### `getById<T>(table, id, columns?)`
-Obtiene un registro por su ID.
-
+### `getById<T>(table, id, columns?)`
+Obtiene un registro por ID.
 ```typescript
-const user = await this.supabaseClient.getById<User>('users', 'user-id-123');
+// NestJS
+const user = await this.supabaseClient.getById<User>('users', 'id-123');
+
+// Standalone
+const user = await supabase.baseClient.getById<User>('users', 'id-123');
 ```
 
-#### `getByQuery<T>(table, query)`
-Obtiene múltiples registros que coincidan con el query.
-
+### `getByQuery<T>(table, query)`
+Obtiene múltiples registros.
 ```typescript
-const users = await this.supabaseClient.getByQuery<User[]>(
-  'users',
-  { role: 'admin', active: true }
-);
+// NestJS
+const users = await this.supabaseClient.getByQuery<User[]>('users', { 
+  role: 'admin' 
+});
+
+// Standalone
+const users = await supabase.baseClient.getByQuery<User[]>('users', { 
+  role: 'admin' 
+});
 ```
 
-#### `getOneByQuery<T>(table, query, columns?)`
-Obtiene un único registro que coincida con el query.
-
+### `getOneByQuery<T>(table, query, columns?)`
+Obtiene un único registro.
 ```typescript
-const user = await this.supabaseClient.getOneByQuery<User>(
-  'users',
-  { email: 'john@example.com' }
-);
+// NestJS
+const user = await this.supabaseClient.getOneByQuery<User>('users', { 
+  email: 'john@example.com' 
+});
+
+// Standalone
+const user = await supabase.baseClient.getOneByQuery<User>('users', { 
+  email: 'john@example.com' 
+});
 ```
 
-## 🔍 Consultas avanzadas con paginación
-
-El `SupabaseQueryService` permite realizar consultas complejas con filtros, ordenamiento y paginación.
-
-### Configuración en el Controller
-
+### `login(email, password)`
+Autenticación de usuarios.
 ```typescript
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { QueryDto, IFilterByPagination } from '@contactship/supabase-sdk';
-import { CallTagService } from './call-tag.service';
+// NestJS
+const { data } = await this.supabaseClient.login(email, password);
 
-@ApiTags('Call Tags')
-@Controller('call-tags')
-export class CallTagController {
-  constructor(private readonly callTagService: CallTagService) {}
-
-  @Get('/')
-  @ApiOperation({ summary: 'Get all call tags with filters and pagination' })
-  async getAll(
-    @Query('organization_id') organizationId: string,
-    @Query() query: QueryDto,
-  ): Promise<IFilterByPagination<CallTag>> {
-    return this.callTagService.matching(organizationId, query);
-  }
-}
+// Standalone
+const { data } = await supabase.baseClient.login(email, password);
 ```
 
-### Implementación en el Service
+### `rpc(functionName, params)`
+Llamar funciones RPC de Supabase.
+```typescript
+// NestJS
+const result = await this.supabaseClient.rpc('my_function', { param: 'value' });
 
+// Standalone
+const result = await supabase.baseClient.rpc('my_function', { param: 'value' });
+```
+
+## 🔍 Consultas Avanzadas
+
+### En NestJS
 ```typescript
 import { Injectable } from '@nestjs/common';
 import {
   SupabaseQueryService,
   CriteriaDto,
+  QueryDto,
   IFilterByPagination,
   IFilterById,
-  QueryDto,
 } from '@contactship/supabase-sdk';
 
-interface CallTag {
-  id: string;
-  name: string;
-  organization_id: string;
-  created_at: Date;
-}
-
 @Injectable()
-export class CallTagService {
-  constructor(
-    private readonly supabaseQueryService: SupabaseQueryService,
-  ) {}
+export class ProductService {
+  constructor(private readonly queryService: SupabaseQueryService) {}
 
-  async matching(
+  async searchProducts(
     organizationId: string,
     query: QueryDto,
-  ): Promise<IFilterByPagination<CallTag>> {
-    // Filtro obligatorio por organización
+  ): Promise<IFilterByPagination<Product>> {
     const filterById: IFilterById = {
       field: 'organization_id',
       value: organizationId,
     };
 
-    // Construir el criterio
     const criteria = new CriteriaDto(
-      'call_tags',              // tabla
-      '*',                      // columnas a seleccionar
-      query.filters,            // filtros adicionales
-      query.orderBy,            // campo de ordenamiento
-      query.orderDirection,     // dirección (ASC/DESC)
-      query.limit?.toString(),  // límite de registros
-      query.offset?.toString(), // offset para paginación
-      filterById,               // filtro adicional obligatorio
+      'products',
+      '*',
+      query.filters,
+      query.orderBy || 'created_at',
+      query.orderDirection || 'DESCENDENT',
+      query.limit?.toString() || '20',
+      query.offset?.toString() || '0',
+      filterById,
     );
 
-    return await this.supabaseQueryService.matching<CallTag>(criteria);
+    return await this.queryService.matching<Product>(criteria);
   }
 }
 ```
 
-### Ejemplos de requests
-
-#### 1. Paginación básica
-
-```bash
-GET /call-tags?organization_id=org-123&limit=10&offset=0
-```
-
-#### 2. Con filtros
-
-```bash
-GET /call-tags?organization_id=org-123&limit=10&offset=0&filters=[{"field":"status","operator":"EQUAL","value":"active"}]
-```
-
-#### 3. Con ordenamiento
-
-```bash
-GET /call-tags?organization_id=org-123&limit=10&offset=0&orderBy=created_at&orderDirection=DESCENDENT
-```
-
-#### 4. Consulta completa
-
-```bash
-GET /call-tags?organization_id=org-123&limit=20&offset=0&filters=[{"field":"name","operator":"LIKE","value":"%urgent%"},{"field":"status","operator":"IN","value":["active","pending"]}]&orderBy=created_at&orderDirection=DESCENDENT
-```
-
-## 🎯 Operadores disponibles
-
+### En Standalone
 ```typescript
-import { OperatorEnum } from '@tu-usuario/nestjs-supabase-module';
+import { createSupabaseSDK } from '@contactship/supabase-sdk/standalone';
+import { 
+  CriteriaDto, 
+  FiltersDto, 
+  OperatorEnum 
+} from '@contactship/supabase-sdk/core';
+
+const supabase = createSupabaseSDK({
+  databaseUrl: process.env.SUPABASE_URL!,
+  databaseKey: process.env.SUPABASE_KEY!,
+});
+
+async function searchProducts(filters: any) {
+  // Construir filtros
+  const filtersArray = [
+    new FiltersDto('status', OperatorEnum.EQUAL, 'active'),
+    new FiltersDto('price', OperatorEnum.GREATER_THAN, 10),
+  ];
+
+  // Crear criterio
+  const criteria = new CriteriaDto(
+    'products',
+    '*',
+    JSON.stringify(filtersArray),
+    'created_at',
+    'DESCENDENT',
+    '20',
+    '0',
+  );
+
+  // Ejecutar consulta
+  const result = await supabase.queryService.matching(criteria);
+  
+  return result;
+}
+```
+
+## 🎯 Operadores Disponibles
+```typescript
+import { OperatorEnum } from '@contactship/supabase-sdk';
 
 // Operadores soportados:
 OperatorEnum.EQUAL           // eq - Igual a
@@ -324,156 +503,106 @@ OperatorEnum.ARRAY_CONTAINS  // cs - Array contiene
 OperatorEnum.ARRAY_INTERSECTS // && - Array intersecta
 ```
 
-### Ejemplos de filtros
+### Ejemplos de uso de filtros
+```typescript
+import { FiltersDto, OperatorEnum } from '@contactship/supabase-sdk/core';
 
-```json
 // Filtro simple
-[
-  {
-    "field": "status",
-    "operator": "EQUAL",
-    "value": "active"
-  }
-]
+const filter1 = new FiltersDto('status', OperatorEnum.EQUAL, 'active');
 
-// Múltiples filtros
-[
-  {
-    "field": "status",
-    "operator": "IN",
-    "value": ["active", "pending"]
-  },
-  {
-    "field": "created_at",
-    "operator": "GTE",
-    "value": "2024-01-01"
-  },
-  {
-    "field": "name",
-    "operator": "ILIKE",
-    "value": "%search%"
-  }
-]
+// Filtro con IN
+const filter2 = new FiltersDto('role', OperatorEnum.IN, ['admin', 'editor']);
 
-// Filtro con null
-[
-  {
-    "field": "deleted_at",
-    "operator": "IS",
-    "value": null
-  }
-]
+// Filtro con LIKE
+const filter3 = new FiltersDto('name', OperatorEnum.ILIKE, '%john%');
+
+// Filtro con IS NULL
+const filter4 = new FiltersDto('deleted_at', OperatorEnum.IS, null);
+
+// Filtro con rango de fechas
+const filter5 = new FiltersDto('created_at', OperatorEnum.GTE, '2024-01-01');
+
+// Combinar múltiples filtros
+const filters = [filter1, filter2, filter3];
+const criteria = new CriteriaDto(
+  'users',
+  '*',
+  JSON.stringify(filters),
+  'created_at',
+  'DESCENDENT',
+  '20',
+  '0',
+);
 ```
 
-## 📊 Respuesta de paginación
-
-Las consultas con `SupabaseQueryService` devuelven un objeto `IFilterByPagination`:
-
+## 📊 Respuesta de Paginación
 ```typescript
+interface IFilterByPagination<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    total_rows: number;
+    total_pages: number;
+  };
+}
+
+// Ejemplo de respuesta
 {
   "data": [
     {
       "id": "1",
-      "name": "Tag 1",
-      "status": "active",
-      "created_at": "2024-01-15T10:30:00Z"
+      "name": "Product 1",
+      "price": 29.99
     },
     {
       "id": "2",
-      "name": "Tag 2",
-      "status": "active",
-      "created_at": "2024-01-16T14:20:00Z"
+      "name": "Product 2",
+      "price": 39.99
     }
   ],
   "pagination": {
     "page": 1,
     "total_rows": 45,
-    "total_pages": 5
+    "total_pages": 3
   }
 }
 ```
 
-## 🛠️ DTOs disponibles
-
-### QueryDto
-Para recibir parámetros de consulta en tus endpoints.
-
-```typescript
-import { QueryDto } from '@contactship/supabase-sdk';
-
-@Get()
-async findAll(@Query() query: QueryDto) {
-  // query.limit
-  // query.offset
-  // query.filters
-  // query.orderBy
-  // query.orderDirection
-}
-```
-
-### CriteriaDto
-Para construir consultas programáticamente.
-
-```typescript
-import { CriteriaDto, IFilterById } from '@contactship/supabase-sdk';
-
-const filterById: IFilterById = {
-  field: 'organization_id',
-  value: 'org-123',
-};
-
-const criteria = new CriteriaDto(
-  'users',                  // tabla
-  'id,name,email',         // columnas
-  query.filters,           // filtros JSON
-  'created_at',            // orderBy
-  'DESCENDENT',            // orderDirection
-  '20',                    // limit
-  '0',                     // offset
-  filterById,              // filtro adicional
-);
-```
-
-### FiltersDto
-Para crear filtros manualmente.
-
-```typescript
-import { FiltersDto, OperatorEnum } from '@contactship/supabase-sdk';
-
-const filter = new FiltersDto('status', 'EQUAL', 'active');
-// O con el enum
-const filter2 = new FiltersDto('age', OperatorEnum.GREATER_THAN, 18);
-```
-
 ## 🗑️ Soft Deletes
 
-El módulo soporta soft deletes automáticamente para las tablas configuradas.
+El SDK soporta soft deletes automáticamente para las tablas configuradas.
 
 ### Configuración
-
 ```typescript
+// NestJS
 SupabaseModule.forRoot({
-  supabaseUrl: process.env.SUPABASE_URL,
-  supabaseKey: process.env.SUPABASE_KEY,
+  databaseUrl: process.env.SUPABASE_URL,
+  databaseKey: process.env.SUPABASE_KEY,
   tables: ['users', 'posts', 'comments'], // Tablas con soft delete
 })
+
+// Standalone
+const supabase = createSupabaseSDK({
+  databaseUrl: process.env.SUPABASE_URL!,
+  databaseKey: process.env.SUPABASE_KEY!,
+  tables: ['users', 'posts', 'comments'], // Tablas con soft delete
+});
 ```
 
 ### Funcionamiento
 
-Todas las consultas en las tablas configuradas automáticamente filtrarán registros donde `deleted_at IS NULL`:
-
+Todas las consultas en las tablas configuradas automáticamente filtran registros donde `deleted_at IS NULL`:
 ```typescript
 // Esta consulta automáticamente excluye registros eliminados
-const users = await this.supabaseClient.getByQuery<User[]>('users', { 
-  role: 'admin' 
-});
+const users = await supabase.baseClient.getByQuery('users', { role: 'admin' });
 // SQL generado: SELECT * FROM users WHERE role = 'admin' AND deleted_at IS NULL
 ```
 
 ## 🔐 Autenticación
 
+### En NestJS
 ```typescript
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { SupabaseBaseClient } from '@contactship/supabase-sdk';
 
 @Injectable()
@@ -496,10 +625,117 @@ export class AuthService {
 }
 ```
 
-## 🎨 Uso con Swagger (Opcional)
+### En Standalone
+```typescript
+import { createSupabaseSDK } from '@contactship/supabase-sdk/standalone';
+
+const supabase = createSupabaseSDK({
+  databaseUrl: process.env.SUPABASE_URL!,
+  databaseKey: process.env.SUPABASE_KEY!,
+});
+
+async function login(email: string, password: string) {
+  const { data, error } = await supabase.baseClient.login(email, password);
+  
+  if (error) {
+    throw new Error('Invalid credentials');
+  }
+
+  return {
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+    user: data.user,
+  };
+}
+```
+
+## 📖 Exports Disponibles
+
+### Para NestJS
+```typescript
+// Módulos
+import { 
+  SupabaseModule, 
+  SupabaseCriteriaModule 
+} from '@contactship/supabase-sdk';
+
+// Clientes y servicios
+import {
+  SupabaseBaseClient,
+  SupabaseQueryService,
+  ConvertToSupabaseQuery,
+} from '@contactship/supabase-sdk';
+
+// Actions
+import {
+  AddNewFilterAction,
+  BuildPaginationAction,
+} from '@contactship/supabase-sdk';
+
+// DTOs
+import {
+  QueryDto,
+  CriteriaDto,
+  FiltersDto,
+  OrderDto,
+  PaginationDto,
+} from '@contactship/supabase-sdk';
+
+// Interfaces
+import {
+  IFilters,
+  IFilterByPagination,
+  IFilterById,
+  SupabaseModuleOptions,
+} from '@contactship/supabase-sdk';
+
+// Enums
+import {
+  OperatorEnum,
+  OrderDirectionEnum,
+} from '@contactship/supabase-sdk';
+```
+
+### Para Standalone
+```typescript
+// Factory principal
+import { createSupabaseSDK } from '@contactship/supabase-sdk/standalone';
+
+// Clases core
+import {
+  SupabaseBaseClientCore,
+  SupabaseQueryServiceCore,
+  ConvertToSupabaseQueryCore,
+  AddNewFilterActionCore,
+  BuildPaginationActionCore,
+} from '@contactship/supabase-sdk/core';
+
+// DTOs
+import {
+  CriteriaDto,
+  FiltersDto,
+  OrderDto,
+  PaginationDto,
+} from '@contactship/supabase-sdk/core';
+
+// Interfaces
+import type {
+  IFilters,
+  IFilterByPagination,
+  IRpcResponse,
+  SupabaseOptionsCore,
+} from '@contactship/supabase-sdk/core';
+
+// Enums
+import {
+  OperatorEnum,
+  OrderDirectionEnum,
+} from '@contactship/supabase-sdk/core';
+```
+
+## 🎨 Uso con Swagger (Solo NestJS)
 
 Si tienes `@nestjs/swagger` instalado, los DTOs incluyen decoradores automáticamente:
-
 ```typescript
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
@@ -508,6 +744,8 @@ import { QueryDto } from '@contactship/supabase-sdk';
 @ApiTags('Users')
 @Controller('users')
 export class UserController {
+  constructor(private readonly userService: UserService) {}
+
   @Get()
   @ApiOperation({ summary: 'Get all users with pagination' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
@@ -518,101 +756,46 @@ export class UserController {
 }
 ```
 
-## 🔧 Uso avanzado
+## 🔧 Ejemplos de Requests HTTP
 
-### Consultas personalizadas con RPC
-
-```typescript
-async getCustomReport(filters: any) {
-  const data = await this.supabaseClient.rpc(
-    'get_sales_report',
-    {
-      start_date: filters.startDate,
-      end_date: filters.endDate,
-      region: filters.region,
-    }
-  );
-  return data;
-}
+### Paginación básica
+```bash
+GET /products?limit=10&offset=0
 ```
 
-### Selección de columnas específicas
-
-```typescript
-// Solo columnas específicas
-const user = await this.supabaseClient.getById<User>(
-  'users',
-  'user-123',
-  'id,name,email'
-);
-
-// Con relaciones (joins)
-const posts = await this.supabaseClient.getByQuery(
-  'posts',
-  { user_id: 'user-123' },
-  'id,title,author:users(name,email)'
-);
+### Con filtros
+```bash
+GET /products?limit=10&offset=0&filters=[{"field":"status","operator":"EQUAL","value":"active"}]
 ```
 
-### Trabajar con schemas diferentes
-
-```typescript
-// Usar un schema personalizado
-const data = await this.supabaseClient.create(
-  'companies',
-  { name: 'Acme Corp' },
-  'custom_schema',  // schema
-  '*'               // columns
-);
+### Con ordenamiento
+```bash
+GET /products?limit=10&offset=0&orderBy=created_at&orderDirection=DESCENDENT
 ```
 
-## 📖 Interfaces exportadas
-
-```typescript
-import {
-  IFilters,
-  IOrder,
-  IPagination,
-  IFilterByPagination,
-  IFilterById,
-  SupabaseModuleOptions,
-} from '@contactship/supabase-sdk';
+### Consulta completa
+```bash
+GET /products?limit=20&offset=0&filters=[{"field":"name","operator":"ILIKE","value":"%laptop%"},{"field":"price","operator":"LTE","value":1000}]&orderBy=price&orderDirection=ASCENDENT
 ```
 
-### IFilterByPagination
-```typescript
-interface IFilterByPagination<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    total_rows: number;
-    total_pages: number;
-  };
-}
-```
+## 🤝 Ejemplos Completos
 
-### IFilters
-```typescript
-interface IFilters {
-  field: string;
-  operator: OperatorEnum;
-  value: string | number | string[] | number[] | Date | null;
-}
-```
-
-## 🤝 Ejemplos completos
-
-### Repositorio básico
-
+### Repositorio NestJS
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { SupabaseBaseClient } from '@contactship/supabase-sdk';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
 
 @Injectable()
 export class UserRepository {
   constructor(private readonly supabaseClient: SupabaseBaseClient) {}
 
-  async create(userData: CreateUserDto): Promise<User> {
+  async create(userData: Partial<User>): Promise<User> {
     return this.supabaseClient.create<User>('users', userData);
   }
 
@@ -620,16 +803,13 @@ export class UserRepository {
     return this.supabaseClient.getById<User>('users', id);
   }
 
-  async update(id: string, userData: UpdateUserDto): Promise<User> {
+  async update(id: string, userData: Partial<User>): Promise<User> {
     return this.supabaseClient.update<User>('users', id, userData);
   }
 
   async findByEmail(email: string): Promise<User | null> {
     try {
-      return await this.supabaseClient.getOneByQuery<User>(
-        'users',
-        { email }
-      );
+      return await this.supabaseClient.getOneByQuery<User>('users', { email });
     } catch (error) {
       return null;
     }
@@ -637,65 +817,105 @@ export class UserRepository {
 }
 ```
 
-### Servicio con búsqueda avanzada
-
+### Aplicación Express completa
 ```typescript
-import { Injectable } from '@nestjs/common';
-import {
-  SupabaseQueryService,
-  CriteriaDto,
-  QueryDto,
-  IFilterByPagination,
-} from '@contactship/supabase-sdk';
+import express from 'express';
+import { createSupabaseSDK } from '@contactship/supabase-sdk/standalone';
+import { 
+  CriteriaDto, 
+  FiltersDto, 
+  OperatorEnum 
+} from '@contactship/supabase-sdk/core';
 
-@Injectable()
-export class ProductService {
-  constructor(
-    private readonly supabaseQueryService: SupabaseQueryService,
-  ) {}
+const app = express();
+app.use(express.json());
 
-  async searchProducts(query: QueryDto): Promise<IFilterByPagination<Product>> {
-    const criteria = new CriteriaDto(
-      'products',
-      'id,name,price,category,stock',
-      query.filters,
-      query.orderBy || 'created_at',
-      query.orderDirection || 'DESCENDENT',
-      query.limit?.toString() || '20',
-      query.offset?.toString() || '0',
-    );
+const supabase = createSupabaseSDK({
+  databaseUrl: process.env.SUPABASE_URL!,
+  databaseKey: process.env.SUPABASE_KEY!,
+  tables: ['users'],
+});
 
-    return this.supabaseQueryService.matching<Product>(criteria);
+// CRUD
+app.post('/users', async (req, res) => {
+  try {
+    const user = await supabase.baseClient.create('users', req.body);
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
+});
 
-  async getProductsByCategory(
-    category: string,
-    query: QueryDto,
-  ): Promise<IFilterByPagination<Product>> {
+app.get('/users/:id', async (req, res) => {
+  try {
+    const user = await supabase.baseClient.getById('users', req.params.id);
+    res.json(user);
+  } catch (error) {
+    res.status(404).json({ error: 'User not found' });
+  }
+});
+
+// Búsqueda con filtros
+app.get('/users/search', async (req, res) => {
+  try {
+    const { name, email, minAge } = req.query;
+    const filters = [];
+
+    if (name) {
+      filters.push(new FiltersDto('name', OperatorEnum.ILIKE, `%${name}%`));
+    }
+    if (email) {
+      filters.push(new FiltersDto('email', OperatorEnum.EQUAL, email));
+    }
+    if (minAge) {
+      filters.push(new FiltersDto('age', OperatorEnum.GTE, Number(minAge)));
+    }
+
     const criteria = new CriteriaDto(
-      'products',
+      'users',
       '*',
-      query.filters,
-      query.orderBy,
-      query.orderDirection,
-      query.limit?.toString(),
-      query.offset?.toString(),
-      { field: 'category', value: category },
+      JSON.stringify(filters),
+      'created_at',
+      'DESCENDENT',
+      '20',
+      '0',
     );
 
-    return this.supabaseQueryService.matching<Product>(criteria);
+    const result = await supabase.queryService.matching(criteria);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-}
+});
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
 ```
 
-## 📝 Notas importantes
+## 📝 Notas Importantes
 
-1. **Soft Deletes**: Asegúrate de configurar las tablas que usan soft delete en las opciones del módulo.
-2. **Filtros**: Los filtros deben enviarse como JSON string en los query parameters.
-3. **Paginación**: Si usas `limit`, también debes proporcionar `offset`.
-4. **Operadores**: Usa los operadores del enum para evitar errores de tipado.
+1. **Imports**: 
+   - NestJS: `@contactship/supabase-sdk`
+   - Standalone: `@contactship/supabase-sdk/standalone`
+   - Core (tipos/clases): `@contactship/supabase-sdk/core`
+
+2. **Soft Deletes**: Configura las tablas en las opciones del módulo/SDK.
+
+3. **Filtros**: En NestJS se envían como JSON string en query params, en standalone los construyes con `FiltersDto`.
+
+4. **Paginación**: Siempre proporciona `limit` junto con `offset`.
+
+5. **TypeScript**: Todas las funciones están completamente tipadas para mejor DX.
 
 ## 🐛 Troubleshooting
+
+### Error: "Cannot find module '@contactship/supabase-sdk/standalone'"
+
+Asegúrate de tener la versión más reciente:
+```bash
+npm install @contactship/supabase-sdk@latest
+```
 
 ### Error: "Offset provided without a limit"
 ```typescript
@@ -711,9 +931,18 @@ export class ProductService {
 // ❌ Incorrecto
 { "operator": "equals" }
 
-// ✅ Correcto
-{ "operator": "EQUAL" }
-// O usa el enum
-import { OperatorEnum } from '@contactship/supabase-sdk';
+// ✅ Correcto - Usa el enum
+import { OperatorEnum } from '@contactship/supabase-sdk/core';
 { "operator": OperatorEnum.EQUAL }
+```
+
+### Imports no funcionan
+```typescript
+// ❌ Evita imports desde /dist
+import { ... } from '@contactship/supabase-sdk/dist/core/...';
+
+// ✅ Usa los exports configurados
+import { ... } from '@contactship/supabase-sdk';
+import { ... } from '@contactship/supabase-sdk/standalone';
+import { ... } from '@contactship/supabase-sdk/core';
 ```

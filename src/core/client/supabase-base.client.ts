@@ -3,7 +3,7 @@ import {
   SupabaseClient,
 } from '@supabase/supabase-js';
 import { get, isEmpty } from 'lodash';
-import { SupabaseOptionsCore } from 'src/core/criteria/domain/interfaces/supabase-options-core.interface';
+import { SupabaseOptionsCore } from '../criteria/domain/interfaces/supabase-options-core.interface';
 
 export class SupabaseBaseClientCore {
   protected readonly _withSoftDelete: string[];

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AddNewFilterActionCore } from 'src/core';
+import { AddNewFilterActionCore } from '../../../../core';
 
 @Injectable()
 export class AddNewFilterAction extends AddNewFilterActionCore {
