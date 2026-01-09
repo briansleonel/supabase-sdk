@@ -1,12 +1,12 @@
 {
-  "name": "@contactship/supabase-sdk",
+  "name": "@briansleonel/supabase-sdk",
   "version": "1.0.3",
   "description": "NestJS module for Supabase with advanced querying and pagination",
   "author": "Brian Leonel <gonzalezbrianleonel76@gmail.com>",
   "private": false,
   "license": "MIT",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/briansleonel/supabase-sdk"
