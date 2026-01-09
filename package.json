@@ -20,12 +20,26 @@
     "README.md",
     "LICENSE"
   ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./standalone": {
+      "import": "./dist/standalone/index.js",
+      "require": "./dist/standalone/index.js",
+      "types": "./dist/standalone/index.d.ts"
+    },
+    "./core": {
+      "import": "./dist/core/index.js",
+      "require": "./dist/core/index.js",
+      "types": "./dist/core/index.d.ts"
+    }
+  },
   "scripts": {
-    "format": "prettier --write \"src/**/*.ts\"",
-    "build": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "npm run build",
-    "test": "jest",
-    "lint": "eslint \"{src}/**/*.ts\" --fix"
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@nestjs/common": "^10.0.0",
