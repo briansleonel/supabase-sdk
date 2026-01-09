@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConvertToSupabaseQuery } from '../../infrastructure/converters/convert-to-supabase-query.convert';
-import { SupabaseQueryServiceCore } from 'src/core';
+import { SupabaseQueryServiceCore } from '../../../../core';
 import { SupabaseBaseClient } from '../../../clients/supabase-base-client';
 
 @Injectable()

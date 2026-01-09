@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SUPABASE_CLIENT } from '../../../symbols';
-import { ConvertToSupabaseQueryCore } from 'src/core';
+import { ConvertToSupabaseQueryCore } from '../../../../core';
 import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()

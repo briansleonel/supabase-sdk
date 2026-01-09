@@ -7,7 +7,7 @@ import {
   BuildPaginationActionCore,
   ConvertToSupabaseQueryCore,
   SupabaseQueryServiceCore,
-} from 'src/core';
+} from '../core';
 
 export function createSupabaseSDK(options: SupabaseOptionsCore): SupabaseSDK {
   const client = createClient(options.databaseUrl, options.databaseKey);

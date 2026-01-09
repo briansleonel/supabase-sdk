@@ -5,7 +5,7 @@ import {
   ConvertToSupabaseQueryCore,
   SupabaseBaseClientCore,
   SupabaseQueryServiceCore,
-} from 'src/core';
+} from '../../core';
 
 export interface SupabaseSDK {
   baseClient: SupabaseBaseClientCore;
