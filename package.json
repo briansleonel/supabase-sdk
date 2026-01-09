@@ -37,6 +37,19 @@
       "types": "./dist/core/index.d.ts"
     }
   },
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/index.d.ts"
+      ],
+      "standalone": [
+        "./dist/standalone/index.d.ts"
+      ],
+      "core": [
+        "./dist/core/index.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build"
